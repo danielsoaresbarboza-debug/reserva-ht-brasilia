@@ -151,8 +151,8 @@ details[open] summary{margin-bottom:14px}
   <section>
     <h2><span class="n">2</span>Esta reserva</h2>
     <div id="opcoes" class="inner"></div>
-    <button type="button" class="btn ghost" id="addOpc">Adicionar data alternativa</button>
-    <div class="foot" id="opcFoot">Hotel de trânsito costuma lotar: adicione até 2 datas alternativas. A opção 1 é a que você mais quer. Cada opção vira um pedido separado, e o campo Observações de cada um avisa a prioridade e que você precisa de uma reserva só.</div>
+    <button type="button" class="btn ghost" id="addOpc">Adicionar outro pedido</button>
+    <div class="foot" id="opcFoot">Hotel de trânsito costuma lotar. Cada pedido vai com uma data oficial e, se quiser, uma alternativa escrita nas Observações. Precisa de mais chances? Adicione outro pedido (até 3). As Observações de cada pedido listam todas as prioridades e avisam que você precisa de uma reserva só.</div>
     <div class="row">
       <label>Horário de chegada<input id="hci" type="time" value="14:00"></label>
       <label>Horário de saída<input id="hco" type="time" value="12:00"></label>
@@ -249,27 +249,40 @@ function br(s){if(!s)return"—";const[y,m,d]=s.split("-");return`${d}/${m}/${y}
 function addDays(s,n){const[y,m,d]=s.split("-").map(Number);return iso(new Date(y,m-1,d+n));}
 let opcs=[];const aberto=new Set();
 (function defaults(){const t=new Date();const add=((8-t.getDay())%7)||7;const a=new Date(t.getFullYear(),t.getMonth(),t.getDate()+add);const b=new Date(a.getFullYear(),a.getMonth(),a.getDate()+1);opcs=[{ci:iso(a),co:iso(b)}];})();
+function prios(){let p=1;return opcs.map(o=>{const r={of:p++};if(o.alt)r.al=p++;return r;});}
 function renderOpc(){
+  const P=prios();
   $("opcoes").innerHTML=opcs.map((o,i)=>`
     <div class="comp" style="grid-template-columns:1fr">
-      <div class="sub" style="margin:0">Opção ${i+1}${opcs.length>1?` · ${i+1}ª prioridade`:""}</div>
+      <div class="sub" style="margin:0">Pedido ${i+1}${opcs.length>1||o.alt?` · ${P[i].of}ª prioridade`:""}</div>
       <div class="row">
         <label>Chegada<input type="date" id="dci${i}" data-o="${i}" data-f="ci" value="${o.ci}"></label>
         <label>Saída<input type="date" id="dco${i}" data-o="${i}" data-f="co" value="${o.co}"></label>
       </div>
-      ${i?`<button type="button" class="btn ghost" data-delo="${i}" style="min-height:40px;font-size:14px;color:var(--err);border-color:var(--err)">Excluir opção ${i+1}</button>`:""}
+      <label style="flex-direction:row;align-items:center;gap:10px;color:var(--fg);cursor:pointer"><input type="checkbox" id="dal${i}" data-o="${i}" data-f="alt" ${o.alt?"checked":""} style="width:22px;height:22px;accent-color:var(--accent)">Incluir data alternativa nas Observações</label>
+      ${o.alt?`<div class="sub" style="margin:0">Alternativa · ${P[i].al}ª prioridade</div>
+      <div class="row">
+        <label>Chegada<input type="date" id="daci${i}" data-o="${i}" data-f="aci" value="${o.aci||""}"></label>
+        <label>Saída<input type="date" id="daco${i}" data-o="${i}" data-f="aco" value="${o.aco||""}"></label>
+      </div>`:""}
+      ${i?`<button type="button" class="btn ghost" data-delo="${i}" style="min-height:40px;font-size:14px;color:var(--err);border-color:var(--err)">Excluir pedido ${i+1}</button>`:""}
     </div>`).join("");
   $("addOpc").hidden=opcs.length>=3;
 }
-$("opcoes").addEventListener("input",e=>{const t=e.target;if(t.dataset.o==null)return;opcs[+t.dataset.o][t.dataset.f]=t.value;aberto.clear();update();});
+$("opcoes").addEventListener("input",e=>{const t=e.target;if(t.dataset.o==null||t.type==="checkbox")return;opcs[+t.dataset.o][t.dataset.f]=t.value;aberto.clear();update();});
+$("opcoes").addEventListener("change",e=>{const t=e.target;if(t.type!=="checkbox"||t.dataset.o==null)return;const o=opcs[+t.dataset.o];o.alt=t.checked;if(o.alt&&!o.aci&&o.ci){o.aci=addDays(o.ci,7);o.aco=addDays(o.co||o.ci,7);}aberto.clear();renderOpc();update();});
 $("opcoes").addEventListener("click",e=>{const d=e.target.dataset.delo;if(d==null)return;opcs.splice(+d,1);aberto.clear();renderOpc();update();});
-$("addOpc").onclick=()=>{const l=opcs[opcs.length-1];opcs.push({ci:l.ci?addDays(l.ci,7):"",co:l.co?addDays(l.co,7):""});aberto.clear();renderOpc();update();};
-const ORD=["1ª","2ª","3ª"];
-function per(o){return `${br(o.ci)} a ${br(o.co)}`;}
+$("addOpc").onclick=()=>{const l=opcs[opcs.length-1];const base=l.alt&&l.aci?l:{aci:l.ci,aco:l.co};opcs.push({ci:base.aci?addDays(base.aci,7):"",co:base.aco?addDays(base.aco,7):"",alt:false});aberto.clear();renderOpc();update();};
+const ORD=n=>n+"ª";
+function per(a,b){return `${br(a)} a ${br(b)}`;}
 function obsPrio(i){
-  if(opcs.length<2)return "";
-  if(i===0)return `PEDIDO DE 1ª PRIORIDADE (${per(opcs[0])}). Também enviei pedido alternativo: ${opcs.slice(1).map((o,j)=>`${ORD[j+1]} prioridade ${per(o)}`).join("; ")}. Preciso de apenas UMA reserva: se esta for confirmada, favor desconsiderar as alternativas.`;
-  return `PEDIDO ALTERNATIVO DE ${ORD[i]} PRIORIDADE (${per(opcs[i])}). Só confirmar se não houver vaga ${i===1?"na 1ª prioridade":"nas prioridades anteriores"} (${opcs.slice(0,i).map((o,j)=>`${ORD[j]}: ${per(o)}`).join("; ")}). Preciso de apenas UMA reserva.`;
+  const P=prios(),o=opcs[i],n=opcs.length;
+  if(n<2&&!o.alt)return "";
+  let t=n>1?`PEDIDO ${i+1} DE ${n}. Datas deste pedido: ${per(o.ci,o.co)} (${ORD(P[i].of)} prioridade).`:`Datas deste pedido: ${per(o.ci,o.co)} (1ª prioridade).`;
+  if(o.alt)t+=` Se não houver vaga, aceito como alternativa: ${per(o.aci,o.aco)} (${ORD(P[i].al)} prioridade).`;
+  if(n>1)t+=` Também enviei: ${opcs.map((x,j)=>j===i?null:`pedido ${j+1} ${per(x.ci,x.co)} (${ORD(P[j].of)})${x.alt?`, alternativa ${per(x.aci,x.aco)} (${ORD(P[j].al)})`:""}`).filter(Boolean).join("; ")}.`;
+  t+=" Preciso de apenas UMA reserva: favor confirmar só a de maior prioridade com vaga e desconsiderar as demais.";
+  return t;
 }
 ["hci","hco","outroMot","evento","pcd","rampa","obs"].forEach(id=>$(id).addEventListener("input",update));
 
@@ -284,6 +297,7 @@ function build(i){
     else if(diff>1)warn.push(["","Essa data ainda não pode ser pedida: o hotel aceita pedidos a partir do dia 1º do mês anterior."]);
     else warn.push(["err","A data de chegada já passou."]);}
   if(ci&&co&&co<=ci)warn.push(["err","A saída precisa ser depois da chegada."]);
+  const oa=opcs[i];if(oa.alt&&(!oa.aci||!oa.aco||oa.aco<=oa.aci))warn.push(["err","Confira a data alternativa: a saída precisa ser depois da chegada."]);
   set(E.nome,data.nome);set(E.guerra,data.guerra);set(E.tipo,data.tipo);set(E.posto,data.posto);set(E.vinculo,data.vinculo);set(E.forca,data.forca);set(E.om,data.om);set(E.tel,data.tel);set(E.cpf,data.cpf);set(E.rg,data.rg);
   set(E.ci,ci);set(E.co,co);set(E.hci,$("hci").value);set(E.hco,$("hco").value);
   const chosen=data.comps.filter((c,i)=>c.nome&&c.nome.trim()&&!fora.has(i));
@@ -313,15 +327,15 @@ function update(){
   const n=rs.length;
   $("guia").innerHTML=n===1
     ?`Toque em <b>Abrir formulário</b>. No formulário: página 1 → Avançar; página 2 → ${data.cpf&&data.rg?"confira":"digite CPF e Identidade"} → Avançar; página 3 → confira e toque em <b>Enviar</b>.`
-    :(prox===-1?`<b>Pronto: as ${n} opções foram abertas.</b> Confira se cada uma mostrou "Sua resposta foi registrada".`
-      :`<b>Passo ${prox+1} de ${n}:</b> toque em <b>Abrir opção ${prox+1}</b>, ${data.cpf&&data.rg?"avance até o fim":"digite CPF e Identidade"}, toque em Enviar e volte aqui${prox+1<n?` pra abrir a opção ${prox+2}`:""}.`);
+    :(prox===-1?`<b>Pronto: os ${n} pedidos foram abertos.</b> Confira se cada uma mostrou "Sua resposta foi registrada".`
+      :`<b>Passo ${prox+1} de ${n}:</b> toque em <b>Abrir pedido ${prox+1}</b>, ${data.cpf&&data.rg?"avance até o fim":"digite CPF e Identidade"}, toque em Enviar e volte aqui${prox+1<n?` pra abrir o pedido ${prox+2}`:""}.`);
   $("envios").innerHTML=rs.map((r,i)=>{
     const nights=r.ci&&r.co?Math.round((new Date(r.co)-new Date(r.ci))/864e5):0;
     const blocked=!dadosOk||r.warn.some(w=>w[0]==="err");
-    const label=aberto.has(i)?`Opção ${i+1} aberta ✓ · abrir de novo`:(n===1?"Abrir formulário":`Abrir opção ${i+1}`);
+    const label=aberto.has(i)?`Pedido ${i+1} aberto ✓ · abrir de novo`:(n===1?"Abrir formulário":`Abrir pedido ${i+1}`);
     return `<div class="comp" style="grid-template-columns:1fr${i===prox&&n>1?";border-color:var(--accent);border-width:2px":""}">
-      <div class="sub" style="margin:0">Opção ${i+1}${n>1?` · ${ORD[i]} prioridade`:""}</div>
-      <dl class="summary"><dt>Chegada</dt><dd>${br(r.ci)}</dd><dt>Saída</dt><dd>${br(r.co)}</dd><dt>Diárias</dt><dd>${nights>0?nights:"—"}</dd></dl>
+      <div class="sub" style="margin:0">Pedido ${i+1}</div>
+      <dl class="summary"><dt>Datas oficiais</dt><dd>${br(r.ci)} a ${br(r.co)}</dd><dt>Diárias</dt><dd>${nights>0?nights:"—"}</dd>${opcs[i].alt?`<dt>Alternativa</dt><dd>${br(opcs[i].aci)} a ${br(opcs[i].aco)}</dd>`:""}</dl>
       ${r.warn.map(([c,t])=>`<div class="note ${c}">${esc(t)}</div>`).join("")}
       ${r.obsTxt?`<div class="foot"><b>Observações que vão no pedido:</b> ${esc(r.obsTxt)}</div>`:""}
       <a class="btn ${aberto.has(i)?"ghost":"primary"}" data-abrir="${i}" href="${blocked?"#":esc(r.url)}" target="_blank" rel="noopener" aria-disabled="${blocked}">${label}</a>
