@@ -151,7 +151,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
 .send.next{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft),var(--glass-shadow)}
 .status{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;padding:4px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent)}
 .send.done .status{background:transparent;color:var(--ok);border:1.5px solid var(--ok)}
-.obsbox{font-size:.88rem;color:var(--muted);border-left:3px solid var(--gold);padding:2px 0 2px 10px}
+.obsbox{white-space:pre-line;font-size:.88rem;color:var(--muted);border-left:3px solid var(--gold);padding:2px 0 2px 10px}
 .howto{counter-reset:s;list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
 .howto li{display:grid;grid-template-columns:32px 1fr;gap:10px;align-items:start}
 .howto li::before{counter-increment:s;content:counter(s);width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);font:500 14px var(--f-mono)}
@@ -440,10 +440,15 @@ function per(a,b){return `${brY(a)} a ${brY(b)}`;}
 function obsPrio(i){
   const P=prios(),o=draft.opcs[i],n=draft.opcs.length;
   if(n<2&&!o.alt)return "";
-  let t=n>1?`PEDIDO ${i+1} DE ${n}. Datas deste pedido: ${per(o.ci,o.co)} (${ORD(P[i].of)} prioridade).`:`Datas deste pedido: ${per(o.ci,o.co)} (1ª prioridade).`;
-  if(o.alt)t+=` Se não houver vaga, aceito como alternativa: ${per(o.aci,o.aco)} (${ORD(P[i].al)} prioridade).`;
-  if(n>1)t+=` Também enviei: ${draft.opcs.map((x,j)=>j===i?null:`pedido ${j+1} ${per(x.ci,x.co)} (${ORD(P[j].of)})${x.alt?`, alternativa ${per(x.aci,x.aco)} (${ORD(P[j].al)})`:""}`).filter(Boolean).join("; ")}.`;
-  return t+" Preciso de apenas UMA reserva: favor confirmar só a de maior prioridade com vaga e desconsiderar as demais.";
+  const blocos=[];
+  if(n>1)blocos.push(`PEDIDO ${i+1} DE ${n}.`);
+  blocos.push(`Datas deste pedido:\n${per(o.ci,o.co)} (${ORD(P[i].of)} prioridade).`);
+  if(o.alt)blocos.push(`Datas para período alternativo:\n${per(o.aci,o.aco)} (${ORD(P[i].al)} prioridade).`);
+  if(n>1){
+    blocos.push(`${n>2?"Outros pedidos enviados":"Outro pedido enviado"}:\n`+draft.opcs.map((x,j)=>j===i?null:`${per(x.ci,x.co)} (${ORD(P[j].of)} prioridade)`+(x.alt?`;\nalternativo ${per(x.aci,x.aco)} (${ORD(P[j].al)} prioridade)`:"")+".").filter(Boolean).join("\n"));
+    blocos.push("Preciso de apenas UMA reserva: favor confirmar só a de maior prioridade com vaga e desconsiderar as demais.");
+  }
+  return blocos.join("\n\n");
 }
 function chosen(){return data.comps.filter((c,i)=>c.nome&&c.nome.trim()&&!draft.fora.includes(i));}
 function build(i){
@@ -468,7 +473,7 @@ function build(i){
   if(ch.length<3){set(SLOTS[2][2],"__other_option__");set(SLOTS[2][2]+".other_option_response","Não se aplica");}
   if(draft.motivo==="Outro"){set(E.motivo,"__other_option__");set(E.motivo+".other_option_response",(draft.outroMot||"").trim()||"Outro");}else set(E.motivo,draft.motivo);
   set(E.evento,(draft.evento||"").trim());set(E.pcd,draft.pcd);set(E.rampa,draft.rampa);
-  const obsTxt=[obsPrio(i),(draft.obs||"").trim()].filter(Boolean).join(" | ");set(E.obs,obsTxt);
+  const obsTxt=[obsPrio(i),(draft.obs||"").trim()].filter(Boolean).join("\n\n");set(E.obs,obsTxt);
   return{url:BASE+"?"+p.toString(),warn,obsTxt,o};
 }
 function step1Ok(){return draft.opcs.every((o,i)=>!build(i).warn.some(w=>w[0]==="err"));}
@@ -486,7 +491,8 @@ function renderSend(){
       <div class="pedido-h"><span class="prio">${P[i].of}ª</span><b>Pedido ${i+1}</b><span class="status" style="margin-left:auto">${done?"✓ Aberto":isNext?"Próximo":"Na fila"}</span></div>
       <dl class="summary"><dt>Datas</dt><dd class="mono">${brY(r.o.ci)} → ${brY(r.o.co)}</dd>${r.o.alt?`<dt>Alternativa</dt><dd class="mono">${brY(r.o.aci)} → ${brY(r.o.aco)}</dd>`:""}</dl>
       ${r.warn.map(([c,t])=>`<div class="note ${c}">${esc(t)}</div>`).join("")}
-      ${r.obsTxt?`<div class="obsbox"><b>Observações:</b> ${esc(r.obsTxt)}</div>`:""}
+      ${r.obsTxt?`<div class="obsbox"><b>Observações:</b>
+${esc(r.obsTxt)}</div>`:""}
       ${done?`<a class="btn ghost small" href="${esc(r.url)}" target="_blank" rel="noopener" data-abrir="${i}">Abrir de novo</a>`:""}
     </div>`;}).join("");
 }
