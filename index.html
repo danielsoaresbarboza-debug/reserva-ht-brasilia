@@ -28,6 +28,7 @@
   --bg:#151912; --card:#1d2219; --fg:#e7ebde; --muted:#a2ab94; --line:#353d2c;
   --accent:#a9bf74; --accent-fg:#141811; --soft:#28301f; --warn:#e8bb5c; --warn-bg:#33290f; --err:#f08b7a; color-scheme:dark}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 body{background:var(--bg);color:var(--fg);font:16px/1.45 var(--f-body);
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
@@ -83,7 +84,7 @@ details[open] summary{margin-bottom:14px}
   <header>
     <div style="display:flex;align-items:center;gap:12px"><img src="icon-192.png" alt="" width="48" height="48" style="border-radius:11px"><div class="eyebrow">Hotel de Trânsito · SGEx</div></div>
     <h1>Reserva HT Brasília</h1>
-    <p>Escolha as datas e o app abre o formulário oficial já preenchido. Você só confere, digita CPF e Identidade e envia.</p>
+    <p>Escolha as datas e o app abre o formulário oficial já preenchido. Você só confere e toca em Enviar.</p>
     <button type="button" class="btn ghost" id="instalarBtn" style="margin-top:12px;min-height:40px;font-size:15px" aria-expanded="false" aria-controls="instalar">Instalar como app</button>
   </header>
 
@@ -129,6 +130,10 @@ details[open] summary{margin-bottom:14px}
           <label>Telefone com DDD<input id="tel" inputmode="tel" autocomplete="tel"></label>
         </div>
         <label>Organização Militar<input id="om"></label>
+        <div class="row stack">
+          <label>CPF<input id="cpf" inputmode="numeric" autocomplete="off" placeholder="000.000.000-00"></label>
+          <label>Identidade<input id="rg" inputmode="numeric" autocomplete="off"></label>
+        </div>
 
         <div class="sub">Acompanhantes cadastrados</div>
         <div id="cadComp" class="inner"></div>
@@ -138,17 +143,16 @@ details[open] summary{margin-bottom:14px}
           <button type="button" class="btn ghost" id="addComp">Adicionar acompanhante</button>
           <button type="button" class="btn primary" id="salvar">Salvar dados</button>
         </div>
-        <div class="foot">Fica guardado só neste aparelho. CPF e Identidade não são guardados nem vão no link: o preenchimento automático do Chrome cuida deles no formulário.</div>
+        <div class="foot">Tudo fica guardado só neste aparelho: nada vai para o GitHub nem para outra pessoa. CPF e Identidade só saem do celular quando você envia o formulário ao hotel. Se deixar em branco, você digita no próprio formulário.</div>
       </div>
     </details>
   </section>
 
   <section>
     <h2><span class="n">2</span>Esta reserva</h2>
-    <div class="row">
-      <label>Chegada<input id="ci" type="date"></label>
-      <label>Saída<input id="co" type="date"></label>
-    </div>
+    <div id="opcoes" class="inner"></div>
+    <button type="button" class="btn ghost" id="addOpc">Adicionar data alternativa</button>
+    <div class="foot" id="opcFoot">Hotel de trânsito costuma lotar: adicione até 2 datas alternativas. A opção 1 é a que você mais quer. Cada opção vira um pedido separado, e o campo Observações de cada um avisa a prioridade e que você precisa de uma reserva só.</div>
     <div class="row">
       <label>Horário de chegada<input id="hci" type="time" value="14:00"></label>
       <label>Horário de saída<input id="hco" type="time" value="12:00"></label>
@@ -171,22 +175,20 @@ details[open] summary{margin-bottom:14px}
   </section>
 
   <section>
-    <h2><span class="n">3</span>Conferir e abrir</h2>
+    <h2><span class="n">3</span>Conferir e enviar</h2>
     <div id="avisos" class="inner"></div>
     <dl class="summary" id="resumo"></dl>
-    <div class="actions">
-      <a class="btn primary" id="abrir" href="#" target="_blank" rel="noopener">Abrir formulário preenchido</a>
-      <button type="button" class="btn ghost" id="copiar">Copiar link</button>
-    </div>
+    <div class="note" id="guia" style="background:var(--soft);color:var(--fg)"></div>
+    <div id="envios" class="inner"></div>
     <div class="toast" id="toast" aria-live="polite"></div>
-    <div class="foot">No formulário: página 1 → Avançar; página 2 → digite CPF e Identidade → Avançar; página 3 → confira e toque em Enviar. Reservas abrem no dia 1º do mês anterior. Check-in a partir das 14h, check-out até 12h.</div>
+    <div class="foot">Se uma opção for confirmada, as outras pedem pro hotel desconsiderar. Reservas abrem no dia 1º do mês anterior. Check-in a partir das 14h, check-out até 12h.</div>
   </section>
 </main>
 
 <script>
 (function(){
 const BASE="https://docs.google.com/forms/d/e/1FAIpQLSfD3uOhxByzoGwi-Rzxfikm6MnnkrRRmPPuYFD5BaYqRLnLNQ/viewform";
-const E={email:27543737,mes:506880645,nome:2000534832,guerra:1098144112,tipo:1950354363,posto:2072637415,vinculo:1302117388,forca:1837847174,om:140465414,tel:309085602,ci:759517195,co:1105733779,hci:340579671,hco:1266951138,nAc:708650133,pcd:1228180293,rampa:2063033278,motivo:818562859,evento:471767119,obs:228160966};
+const E={email:27543737,mes:506880645,nome:2000534832,guerra:1098144112,tipo:1950354363,posto:2072637415,vinculo:1302117388,forca:1837847174,om:140465414,tel:309085602,cpf:531580681,rg:1181323338,ci:759517195,co:1105733779,hci:340579671,hco:1266951138,nAc:708650133,pcd:1228180293,rampa:2063033278,motivo:818562859,evento:471767119,obs:228160966};
 const SLOTS=[[1622506721,501523026,1640039593],[1155699139,1177955867,143150609],[130740694,1120278285,1321953862],[515340831,1307909544,2038719256]];
 // Texto exato das opções de "Parentesco" difere entre os slots no formulário
 const CONJ=["Cônjuge/Companheira (o), com certidão de união estável","Cônjuge","Cônjuge/Companheira (o), com certidão de união estável","Cônjuge"];
@@ -194,8 +196,8 @@ const REL={conjuge:"Cônjuge",filho_menor:"Filho menor de 24 anos",filho_maior:"
 const MOTIVOS=["Trabalho","Trânsito","Férias","Lazer","Outro"];
 const KEY="reservaHT.v1";
 const $=id=>document.getElementById(id);
-const FIX=["email","nome","guerra","posto","tipo","vinculo","forca","tel","om"];
-const DEFAULT={email:"",nome:"",guerra:"",posto:"1º Ten",tipo:"Oficial",vinculo:"Militar (ativa)",forca:"Exército",tel:"",om:"CI Art Msl Fgt / Cmdo Art Ex",comps:[{nome:"",idade:"",rel:"conjuge"},{nome:"",idade:"",rel:"filho_menor"}]};
+const FIX=["email","nome","guerra","posto","tipo","vinculo","forca","tel","om","cpf","rg"];
+const DEFAULT={cpf:"",rg:"",email:"",nome:"",guerra:"",posto:"1º Ten",tipo:"Oficial",vinculo:"Militar (ativa)",forca:"Exército",tel:"",om:"CI Art Msl Fgt / Cmdo Art Ex",comps:[{nome:"",idade:"",rel:"conjuge"},{nome:"",idade:"",rel:"filho_menor"}]};
 let data=load();
 let motivo="Lazer";
 
@@ -244,21 +246,45 @@ $("motivos").addEventListener("change",e=>{motivo=e.target.value;$("outroWrap").
 
 function iso(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
 function br(s){if(!s)return"—";const[y,m,d]=s.split("-");return`${d}/${m}/${y}`;}
-(function defaults(){const t=new Date();const add=((8-t.getDay())%7)||7;const a=new Date(t.getFullYear(),t.getMonth(),t.getDate()+add);const b=new Date(a.getFullYear(),a.getMonth(),a.getDate()+1);$("ci").value=iso(a);$("co").value=iso(b);})();
-["ci","co","hci","hco","outroMot","evento","pcd","rampa","obs"].forEach(id=>$(id).addEventListener("input",update));
+function addDays(s,n){const[y,m,d]=s.split("-").map(Number);return iso(new Date(y,m-1,d+n));}
+let opcs=[];const aberto=new Set();
+(function defaults(){const t=new Date();const add=((8-t.getDay())%7)||7;const a=new Date(t.getFullYear(),t.getMonth(),t.getDate()+add);const b=new Date(a.getFullYear(),a.getMonth(),a.getDate()+1);opcs=[{ci:iso(a),co:iso(b)}];})();
+function renderOpc(){
+  $("opcoes").innerHTML=opcs.map((o,i)=>`
+    <div class="comp" style="grid-template-columns:1fr">
+      <div class="sub" style="margin:0">Opção ${i+1}${opcs.length>1?` · ${i+1}ª prioridade`:""}</div>
+      <div class="row">
+        <label>Chegada<input type="date" id="dci${i}" data-o="${i}" data-f="ci" value="${o.ci}"></label>
+        <label>Saída<input type="date" id="dco${i}" data-o="${i}" data-f="co" value="${o.co}"></label>
+      </div>
+      ${i?`<button type="button" class="btn ghost" data-delo="${i}" style="min-height:40px;font-size:14px;color:var(--err);border-color:var(--err)">Excluir opção ${i+1}</button>`:""}
+    </div>`).join("");
+  $("addOpc").hidden=opcs.length>=3;
+}
+$("opcoes").addEventListener("input",e=>{const t=e.target;if(t.dataset.o==null)return;opcs[+t.dataset.o][t.dataset.f]=t.value;aberto.clear();update();});
+$("opcoes").addEventListener("click",e=>{const d=e.target.dataset.delo;if(d==null)return;opcs.splice(+d,1);aberto.clear();renderOpc();update();});
+$("addOpc").onclick=()=>{const l=opcs[opcs.length-1];opcs.push({ci:l.ci?addDays(l.ci,7):"",co:l.co?addDays(l.co,7):""});aberto.clear();renderOpc();update();};
+const ORD=["1ª","2ª","3ª"];
+function per(o){return `${br(o.ci)} a ${br(o.co)}`;}
+function obsPrio(i){
+  if(opcs.length<2)return "";
+  if(i===0)return `PEDIDO DE 1ª PRIORIDADE (${per(opcs[0])}). Também enviei pedido alternativo: ${opcs.slice(1).map((o,j)=>`${ORD[j+1]} prioridade ${per(o)}`).join("; ")}. Preciso de apenas UMA reserva: se esta for confirmada, favor desconsiderar as alternativas.`;
+  return `PEDIDO ALTERNATIVO DE ${ORD[i]} PRIORIDADE (${per(opcs[i])}). Só confirmar se não houver vaga ${i===1?"na 1ª prioridade":"nas prioridades anteriores"} (${opcs.slice(0,i).map((o,j)=>`${ORD[j]}: ${per(o)}`).join("; ")}). Preciso de apenas UMA reserva.`;
+}
+["hci","hco","outroMot","evento","pcd","rampa","obs"].forEach(id=>$(id).addEventListener("input",update));
 
-function build(){
+function build(i){
   const p=new URLSearchParams();p.set("usp","pp_url");
   const set=(k,v)=>{if(v!==""&&v!=null)p.append("entry."+k,v);};
   if(data.email){p.set("emailAddress",data.email);set(E.email,data.email);}
-  const ci=$("ci").value,co=$("co").value,today=new Date();
+  const ci=opcs[i].ci,co=opcs[i].co,today=new Date();
   const warn=[];
   if(ci){const [y,m]=ci.split("-").map(Number);const diff=(y-today.getFullYear())*12+(m-1-today.getMonth());
     if(diff===0)set(E.mes,"Mês Atual");else if(diff===1)set(E.mes,"Mês Seguinte");
     else if(diff>1)warn.push(["","Essa data ainda não pode ser pedida: o hotel aceita pedidos a partir do dia 1º do mês anterior."]);
     else warn.push(["err","A data de chegada já passou."]);}
   if(ci&&co&&co<=ci)warn.push(["err","A saída precisa ser depois da chegada."]);
-  set(E.nome,data.nome);set(E.guerra,data.guerra);set(E.tipo,data.tipo);set(E.posto,data.posto);set(E.vinculo,data.vinculo);set(E.forca,data.forca);set(E.om,data.om);set(E.tel,data.tel);
+  set(E.nome,data.nome);set(E.guerra,data.guerra);set(E.tipo,data.tipo);set(E.posto,data.posto);set(E.vinculo,data.vinculo);set(E.forca,data.forca);set(E.om,data.om);set(E.tel,data.tel);set(E.cpf,data.cpf);set(E.rg,data.rg);
   set(E.ci,ci);set(E.co,co);set(E.hci,$("hci").value);set(E.hco,$("hco").value);
   const chosen=data.comps.filter((c,i)=>c.nome&&c.nome.trim()&&!fora.has(i));
   if(chosen.length)set(E.nAc,String(chosen.length));
@@ -267,31 +293,44 @@ function build(){
   // O formulário exige o parentesco do 3º acompanhante mesmo quando não existe
   if(chosen.length<3){set(SLOTS[2][2],"__other_option__");set(SLOTS[2][2]+".other_option_response","Não se aplica");}
   if(motivo==="Outro"){set(E.motivo,"__other_option__");set(E.motivo+".other_option_response",$("outroMot").value.trim()||"Outro");}else set(E.motivo,motivo);
-  set(E.evento,$("evento").value.trim());set(E.pcd,$("pcd").value);set(E.rampa,$("rampa").value);set(E.obs,$("obs").value.trim());
-  if(!complete())warn.unshift(["err","Preencha e salve seus dados (e-mail, nome e telefone) em \"Meus dados\"."]);
-  return {url:BASE+"?"+p.toString(),warn,chosen,ci,co};
+  set(E.evento,$("evento").value.trim());set(E.pcd,$("pcd").value);set(E.rampa,$("rampa").value);const obsTxt=[obsPrio(i),$("obs").value.trim()].filter(Boolean).join(" | ");set(E.obs,obsTxt);
+  return {url:BASE+"?"+p.toString(),warn,chosen,ci,co,obsTxt};
 }
 
 function update(){
   save();
-  const r=build();
-  const nights=r.ci&&r.co?Math.round((new Date(r.co)-new Date(r.ci))/864e5):0;
+  const rs=opcs.map((o,i)=>build(i));
+  const r0=rs[0];
   $("resumo").innerHTML=[
     ["Hóspede",data.nome?`${data.posto} ${data.guerra||data.nome}`:"—"],
-    ["Chegada",`${br(r.ci)} às ${$("hci").value||"—"}`],
-    ["Saída",`${br(r.co)} às ${$("hco").value||"—"}`],
-    ["Diárias",nights>0?String(nights):"—"],
-    ["Acompanhantes",r.chosen.length?r.chosen.map(c=>c.nome.split(" ")[0]).join(", "):"nenhum"],
+    ["Horários",`chegada ${$("hci").value||"—"} · saída ${$("hco").value||"—"}`],
+    ["Acompanhantes",r0.chosen.length?r0.chosen.map(c=>c.nome.split(" ")[0]).join(", "):"nenhum"],
     ["Motivo",motivo==="Outro"?($("outroMot").value||"Outro"):motivo]
   ].map(([k,v])=>`<dt>${k}</dt><dd>${esc(v)}</dd>`).join("");
-  $("avisos").innerHTML=r.warn.map(([c,t])=>`<div class="note ${c}">${esc(t)}</div>`).join("");
-  const blocked=r.warn.some(w=>w[0]==="err");
-  $("abrir").href=blocked?"#":r.url;$("abrir").setAttribute("aria-disabled",blocked);
-  $("copiar").disabled=blocked;
+  const dadosOk=complete();
+  $("avisos").innerHTML=dadosOk?"":`<div class="note err">Preencha e salve seus dados (e-mail, nome e telefone) em "Meus dados".</div>`;
+  const prox=rs.findIndex((r,i)=>!aberto.has(i));
+  const n=rs.length;
+  $("guia").innerHTML=n===1
+    ?`Toque em <b>Abrir formulário</b>. No formulário: página 1 → Avançar; página 2 → ${data.cpf&&data.rg?"confira":"digite CPF e Identidade"} → Avançar; página 3 → confira e toque em <b>Enviar</b>.`
+    :(prox===-1?`<b>Pronto: as ${n} opções foram abertas.</b> Confira se cada uma mostrou "Sua resposta foi registrada".`
+      :`<b>Passo ${prox+1} de ${n}:</b> toque em <b>Abrir opção ${prox+1}</b>, ${data.cpf&&data.rg?"avance até o fim":"digite CPF e Identidade"}, toque em Enviar e volte aqui${prox+1<n?` pra abrir a opção ${prox+2}`:""}.`);
+  $("envios").innerHTML=rs.map((r,i)=>{
+    const nights=r.ci&&r.co?Math.round((new Date(r.co)-new Date(r.ci))/864e5):0;
+    const blocked=!dadosOk||r.warn.some(w=>w[0]==="err");
+    const label=aberto.has(i)?`Opção ${i+1} aberta ✓ · abrir de novo`:(n===1?"Abrir formulário":`Abrir opção ${i+1}`);
+    return `<div class="comp" style="grid-template-columns:1fr${i===prox&&n>1?";border-color:var(--accent);border-width:2px":""}">
+      <div class="sub" style="margin:0">Opção ${i+1}${n>1?` · ${ORD[i]} prioridade`:""}</div>
+      <dl class="summary"><dt>Chegada</dt><dd>${br(r.ci)}</dd><dt>Saída</dt><dd>${br(r.co)}</dd><dt>Diárias</dt><dd>${nights>0?nights:"—"}</dd></dl>
+      ${r.warn.map(([c,t])=>`<div class="note ${c}">${esc(t)}</div>`).join("")}
+      ${r.obsTxt?`<div class="foot"><b>Observações que vão no pedido:</b> ${esc(r.obsTxt)}</div>`:""}
+      <a class="btn ${aberto.has(i)?"ghost":"primary"}" data-abrir="${i}" href="${blocked?"#":esc(r.url)}" target="_blank" rel="noopener" aria-disabled="${blocked}">${label}</a>
+    </div>`;}).join("");
 }
+$("envios").addEventListener("click",e=>{const a=e.target.closest("[data-abrir]");if(!a||a.getAttribute("aria-disabled")==="true")return;const i=+a.dataset.abrir;setTimeout(()=>{aberto.add(i);update();},300);});
 function setState(){$("dadosState").textContent=complete()?`${data.posto} ${data.guerra||data.nome} · editar`:"preencher";}
 function toast(t){$("toast").textContent=t;clearTimeout(toast.h);toast.h=setTimeout(()=>$("toast").textContent="",4000);}
-$("copiar").onclick=async()=>{const u=build().url;try{await navigator.clipboard.writeText(u);toast("Link copiado.");}catch(e){toast("Não deu pra copiar automaticamente neste app.");}};
+
 
 const APP_URL="https://danielsoaresbarboza-debug.github.io/reserva-ht-brasilia/";
 let promptEv=null;window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();promptEv=e;});
@@ -301,7 +340,7 @@ const ua=navigator.userAgent||"";const isIos=/iPhone|iPad|iPod/i.test(ua),isAnd=
 if(isIos)$("instAndroid").hidden=true;else if(isAnd)$("instIos").hidden=true;
 $("instalarBtn").onclick=async()=>{if(promptEv){promptEv.prompt();const r=await promptEv.userChoice;promptEv=null;if(r.outcome==="accepted"){$("instalarBtn").hidden=true;return;}}const s=$("instalar");s.hidden=!s.hidden;$("instalarBtn").setAttribute("aria-expanded",!s.hidden);if(!s.hidden)s.scrollIntoView({block:"start"});};
 $("copiarApp").onclick=async()=>{try{await navigator.clipboard.writeText(APP_URL);$("toastApp").textContent="Link copiado. Cole na barra de endereço do navegador.";}catch(e){$("toastApp").textContent="Copie este endereço: "+APP_URL;}};
-fillFixed();renderCad();
+fillFixed();renderCad();renderOpc();
 renderVai();setState();$("dados").open=!complete();update();
 })();
 </script>
